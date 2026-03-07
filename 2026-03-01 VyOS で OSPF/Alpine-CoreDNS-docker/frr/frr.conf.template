@@ -1,5 +1,3 @@
-!
-frr version 8.5
 frr defaults traditional
 hostname ${FRR_HOST_NAME}
 log syslog informational
@@ -24,5 +22,5 @@ router ospf
 ! ループバックインターフェースではOSPFパケットを送信しない
  passive-interface lo
 !
-line vty
 !
+! docker logs -f frr リアルタイムにログを表示
