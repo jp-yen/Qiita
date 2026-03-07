@@ -1,0 +1,71 @@
+services:
+  # ---------------------------------------------------------
+  # Routing Service: FRRouting
+  # ---------------------------------------------------------
+  frr:
+    image: frrouting/frr:latest
+    container_name: frr
+    restart: unless-stopped
+    network_mode: host # ホストネットワークを利用
+    privileged: true # カーネルルーティングテーブル操作に必要
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+    volumes:
+      - ./frr/frr.conf:/etc/frr/frr.conf
+      - ./frr/daemons:/etc/frr/daemons
+      - ./frr/vtysh.conf:/etc/frr/vtysh.conf
+      # ヘルスチェックからの操作用
+      - frr_sockets:/var/run/frr
+
+  # ---------------------------------------------------------
+  # DNS Service: CoreDNS
+  # ---------------------------------------------------------
+  coredns:
+    image: coredns/coredns:latest
+    container_name: coredns
+    restart: always # 異常終了時はDockerが自動再起動（スクリプトからも制御）
+    network_mode: host # VIP (100.64.255.53) でリッスンするため
+    environment:
+      - VIP=${VIP}
+      - HOST_IP=${HOST_IP}
+    volumes:
+      - ./coredns/Corefile:/etc/coredns/Corefile
+      - ./coredns/hosts:/etc/hosts
+    command: -conf /etc/coredns/Corefile
+
+  # ---------------------------------------------------------
+  # Monitoring Service: Custom Alpine Healthcheck
+  # ---------------------------------------------------------
+  healthcheck:
+    build:
+      context: .
+      dockerfile: healthcheck/Dockerfile
+    container_name: dns_healthcheck
+    restart: unless-stopped
+    network_mode: host # ローカルのCoreDNSへアクセスするため
+    environment:
+      - VIP=${VIP}
+      - OSPF_AREA=${OSPF_AREA}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock # 他コンテナの再起動用
+      - ./healthcheck/check.sh:/usr/local/bin/check.sh
+      - frr_sockets:/var/run/frr # FRRへのコマンド送信用ソケット共有
+    entrypoint: [ "/bin/bash", "/usr/local/bin/check.sh" ]
+
+volumes:
+  frr_sockets:
+    # FRRとヘルスチェック間で通信ソケットを共有
+
+
+# OSPF の状態確認
+# docker exec -it frr vtysh
+# show ip route
+# show ip route ospf
+# show ip ospf neighbor
+# show ip ospf database
+# show ip ospf interface
+# show running-config
+#
+# docker exec frr vtysh -c "show ip ospf neighbor"
+#

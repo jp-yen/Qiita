@@ -1,0 +1,9 @@
+100.64.255.53	dns.vip.my.home
+${HOST_IP}	dns-addr
+
+100.64.99.8	dns99a frr99a
+100.64.99.9	dns99b frr99b
+100.64.10.8	dns10a frr10a
+100.64.10.9	dns10b frr10b
+100.64.20.8	dns20a frr20a
+100.64.20.9	dns20b frr20b

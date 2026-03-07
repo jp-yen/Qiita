@@ -1,0 +1,28 @@
+!
+frr version 8.5
+frr defaults traditional
+hostname ${FRR_HOST_NAME}
+log syslog informational
+!
+! ループバックインターフェースの定義（VIP）
+interface lo
+ ip address ${VIP}/32
+!
+! 物理インターフェース
+interface eth0
+ description Physical Interface
+!
+router ospf
+ ospf router-id ${HOST_IP}
+!
+! DNS アドレスを同一エリア内の経路として広報
+ network ${VIP}/32 area ${OSPF_AREA}
+!
+! 物理ネットワークの広報
+ network ${OSPF_AREA}/24 area ${OSPF_AREA}
+!
+! ループバックインターフェースではOSPFパケットを送信しない
+ passive-interface lo
+!
+line vty
+!

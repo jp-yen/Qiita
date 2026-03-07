@@ -1,0 +1,32 @@
+# ローカルドメインの解決専用
+my.home:53 {
+    # VIPと物理IPの両方でバインド
+    bind {$VIP} {$HOST_IP}
+    hosts /etc/hosts {
+        fallthrough			# hosts に記載がなければ次 (forward する)
+    }
+
+    forward . 192.168.0.252	# my.home のフォワード先
+
+    # ログ出力とエラー監視
+    log
+    errors
+
+    # キャッシュ設定
+    cache 30
+}
+
+.:53 {
+    bind {$VIP} {$HOST_IP}
+    hosts /etc/hosts {
+        fallthrough			# hosts に記載がなければ次 (forward する)
+    }
+
+    forward . 192.168.0.252 1.0.0.1	# デフォルトのフォワード先
+    log
+    errors
+    cache 30
+
+    # ヘルスチェックエンドポイント（:8080/health）の有効化
+    health :8080
+}
