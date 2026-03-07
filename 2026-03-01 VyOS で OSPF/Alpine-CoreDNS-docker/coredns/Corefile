@@ -1,32 +1,34 @@
 # ローカルドメインの解決専用
 my.home:53 {
-    # VIPと物理IPの両方でバインド
-    bind {$VIP} {$HOST_IP}
-    hosts /etc/hosts {
-        fallthrough			# hosts に記載がなければ次 (forward する)
-    }
+  bind {$VIP} {$HOST_IP}            # VIPと物理IPの両方でバインド
+  hosts /etc/hosts { fallthrough }  # hosts に記載がなければ次
+  forward . 192.168.0.252 {         # my.home のフォワード先
+    health_check 60s                # 60秒ごとにヘルスチェック
+    max_fails 3                     # 3回エラーが発生するとフォワード先から除外
+    policy random                   # forward 先はランダム
+  }
 
-    forward . 192.168.0.252	# my.home のフォワード先
+  log             # ログ出力とエラー監視
+  errors
+  cache 30        # キャッシュ設定 (30秒)
+  loop            # 自分への再起問い合わせを防ぐ
 
-    # ログ出力とエラー監視
-    log
-    errors
-
-    # キャッシュ設定
-    cache 30
+  reload 30s      # 設定ファイルが変更された場合は再読み込みする
+  health :8080    # ヘルスチェックエンドポイント（:8080/health）の有効化
 }
 
+# ローカルドメイン以外の名前解決
 .:53 {
-    bind {$VIP} {$HOST_IP}
-    hosts /etc/hosts {
-        fallthrough			# hosts に記載がなければ次 (forward する)
-    }
+  bind {$VIP} {$HOST_IP}
+  hosts /etc/hosts { fallthrough }
+  forward . 192.168.0.252 1.0.0.1 8.8.4.4 { # 内部 DNS 以外に Cloudflare, Goole にフォワード
+    health_check 60s
+    max_fails 3
+    policy random
+  }
 
-    forward . 192.168.0.252 1.0.0.1	# デフォルトのフォワード先
-    log
-    errors
-    cache 30
-
-    # ヘルスチェックエンドポイント（:8080/health）の有効化
-    health :8080
+  log
+  errors
+  cache 30
+  loop
 }
