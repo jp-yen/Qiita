@@ -45,7 +45,7 @@ restart_coredns() {
 # DNSクエリテスト
 check_dns() {
     # VIPに対してdigを実行。タイムアウト2秒、試行1回。
-    dig @$VIP $CHECK_DOMAIN +time=2 +tries=1 > /dev/null 2>&1
+    dig @$VIP $CHECK_DOMAIN +time=2 +tries=1 +short > /dev/null 2>&1
     return $?
 }
 
