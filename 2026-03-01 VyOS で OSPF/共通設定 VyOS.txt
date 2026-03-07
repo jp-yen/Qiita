@@ -1,0 +1,59 @@
+configure
+load /opt/vyatta/etc/config.boot.default
+
+delete interfaces
+delete service
+delete nat
+delete protocols
+delete vpn
+delete vrf
+
+set system domain-name 'my.home'
+set system time-zone 'Asia/Tokyo'
+set system ipv6 disable-forwarding
+set system option kernel disable-mitigations
+set system option performance virtual-guest
+
+
+set vrf name MGT table '100'
+
+set interfaces ethernet eth0 vrf MGT
+# set interfaces ethernet eth0 address <addr>
+set vrf name MGT protocols static route 0.0.0.0/0 next-hop 192.168.0.254
+
+set system domain-name 'my.home'
+# set system host-name <hostname>
+
+set system time-zone 'Asia/Tokyo'
+
+set service lldp interface all
+set service lldp legacy-protocols cdp
+set system ipv6 disable-forwarding
+
+set system name-server 192.168.0.252
+set system name-server 1.0.0.1
+
+delete service ntp
+set service ntp vrf MGT
+set service ntp server 192.168.0.254
+set service ntp server 192.168.0.252
+set service ssh vrf MGT
+
+# IPsec
+set vpn ipsec esp-group IPsec_ESP lifetime '3600'
+set vpn ipsec esp-group IPsec_ESP mode 'tunnel'
+set vpn ipsec esp-group IPsec_ESP pfs 'dh-group31'
+set vpn ipsec esp-group IPsec_ESP proposal 1 encryption 'chacha20poly1305'
+set vpn ipsec esp-group IPsec_ESP proposal 1 hash 'aes256gmac'
+set vpn ipsec ike-group IPsec_IKE dead-peer-detection action 'restart'
+set vpn ipsec ike-group IPsec_IKE dead-peer-detection interval '15'
+set vpn ipsec ike-group IPsec_IKE dead-peer-detection timeout '30'
+set vpn ipsec ike-group IPsec_IKE ikev2-reauth
+set vpn ipsec ike-group IPsec_IKE key-exchange 'ikev2'
+set vpn ipsec ike-group IPsec_IKE lifetime '28800'
+set vpn ipsec ike-group IPsec_IKE proposal 1 dh-group '31'
+set vpn ipsec ike-group IPsec_IKE proposal 1 encryption 'chacha20poly1305'
+set vpn ipsec ike-group IPsec_IKE proposal 1 hash 'aes256gmac'
+set vpn ipsec ike-group IPsec_IKE proposal 1 prf 'prfsha512'
+set vpn ipsec interface 'pppoe0'
+set vpn ipsec options disable-route-autoinstall

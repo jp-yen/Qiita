@@ -1,0 +1,30 @@
+set interfaces ethernet eth0 address 192.168.0.90/24
+set system host-name 'PPPoE'
+
+# PPPoE側設定
+set interfaces ethernet eth1 description 'PPPoE-Server'
+set service pppoe-server interface eth1
+set service pppoe-server access-concentrator PPPoE-Server
+set service pppoe-server authentication mode 'local'
+set service pppoe-server client-ip-pool PPPOE-POOL range 100.64.10.0-100.64.10.10
+set service pppoe-server default-pool 'PPPOE-POOL'
+set service pppoe-server gateway-address '100.64.0.0'
+set service pppoe-server ppp-options disable-ccp
+set service pppoe-server ppp-options ipv4 'prefer'
+set service pppoe-server ppp-options lcp-echo-failure '5'
+set service pppoe-server ppp-options lcp-echo-interval '5'
+set service pppoe-server ppp-options min-mtu '1000'
+set service pppoe-server mtu '1454'
+set service pppoe-server ppp-options mru '1454'
+# 1アカウントで複数セッション可能
+set service pppoe-server session-control 'disable'
+
+# ユーザー情報
+set service pppoe-server authentication local-users username user99 password 'pass99'
+set service pppoe-server authentication local-users username user99 static-ip 100.64.0.99
+set service pppoe-server authentication local-users username user10 password 'pass10'
+set service pppoe-server authentication local-users username user10 static-ip 100.64.0.10
+set service pppoe-server authentication local-users username user20 password 'pass20'
+set service pppoe-server authentication local-users username user20 static-ip 100.64.0.20
+commit ; save ; exit
+true

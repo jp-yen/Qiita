@@ -1,0 +1,88 @@
+set interfaces ethernet eth0 address 192.168.0.99/24
+set system host-name 'RT99'
+
+# eth0: PPPoE クライアント用インターフェース
+set interfaces ethernet eth1 description 'PPPoE'
+
+# PPPoE クライアント設定
+set interfaces pppoe pppoe0 authentication username 'user99'
+set interfaces pppoe pppoe0 authentication password 'pass99'
+set interfaces pppoe pppoe0 default-route 10
+set interfaces pppoe pppoe0 mtu '1492'
+set interfaces pppoe pppoe0 source-interface 'eth1'
+set interfaces pppoe pppoe0 no-default-route
+set interfaces pppoe pppoe0 no-peer-dns
+set protocols static route 100.64.0.0/24 interface pppoe0
+
+# eth2: LAN 側
+set interfaces ethernet eth2 address '100.64.99.1/24'
+set interfaces ethernet eth2 description 'LAN'
+
+# DHCPサーバー
+set service dhcp-server shared-network-name LAN subnet 100.64.99.0/24 option default-router '100.64.99.1'
+set service dhcp-server shared-network-name LAN subnet 100.64.99.0/24 option name-server '192.168.0.252'
+set service dhcp-server shared-network-name LAN subnet 100.64.99.0/24 option name-server '1.0.0.1'
+set service dhcp-server shared-network-name LAN subnet 100.64.99.0/24 option ntp-server '192.168.0.252'
+set service dhcp-server shared-network-name LAN subnet 100.64.99.0/24 ping-check
+set service dhcp-server shared-network-name LAN subnet 100.64.99.0/24 range 1 start '100.64.99.10'
+set service dhcp-server shared-network-name LAN subnet 100.64.99.0/24 range 1 stop '100.64.99.100'
+set service dhcp-server shared-network-name LAN subnet 100.64.99.0/24 subnet-id '1'
+set service dhcp-server listen-interface eth2
+
+# eth3: 上流
+set interfaces ethernet eth3 address '192.168.0.91/24'
+set interfaces ethernet eth3 description 'Internet'
+set protocols static route 0.0.0.0/0 next-hop 192.168.0.254
+
+set nat source rule 100 outbound-interface name 'eth3'
+set nat source rule 100 translation address 'masquerade'
+
+#IPsec
+set vpn ipsec authentication psk TR99-to-RT10 id 'RT99'
+set vpn ipsec authentication psk TR99-to-RT10 id 'RT10'
+set vpn ipsec authentication psk TR99-to-RT10 secret 'secret_ABC-def'
+
+set vpn ipsec site-to-site peer TR99-to-RT10 authentication local-id 'RT99'
+set vpn ipsec site-to-site peer TR99-to-RT10 authentication mode 'pre-shared-secret'
+set vpn ipsec site-to-site peer TR99-to-RT10 authentication remote-id 'RT10'
+set vpn ipsec site-to-site peer TR99-to-RT10 connection-type 'initiate'
+set vpn ipsec site-to-site peer TR99-to-RT10 ike-group 'IPsec_IKE'
+set vpn ipsec site-to-site peer TR99-to-RT10 ikev2-reauth 'inherit'
+set vpn ipsec site-to-site peer TR99-to-RT10 local-address '100.64.0.99'
+set vpn ipsec site-to-site peer TR99-to-RT10 remote-address '100.64.0.10'
+set vpn ipsec site-to-site peer TR99-to-RT10 vti bind 'vti10'
+set vpn ipsec site-to-site peer TR99-to-RT10 vti esp-group 'IPsec_ESP'
+set interfaces vti vti10 address '100.64.1.11/31'
+set interfaces vti vti10 description 'RT99-to-RT10_tunnel'
+set interfaces vti vti10 ip adjust-mss 'clamp-mss-to-pmtu'
+set protocols static route 100.64.1.10/32 interface vti10
+
+set vpn ipsec authentication psk TR99-to-RT20 id 'RT99'
+set vpn ipsec authentication psk TR99-to-RT20 id 'RT20'
+set vpn ipsec authentication psk TR99-to-RT20 secret 'secret_ABC-def'
+
+set vpn ipsec site-to-site peer TR99-to-RT20 authentication local-id 'RT99'
+set vpn ipsec site-to-site peer TR99-to-RT20 authentication mode 'pre-shared-secret'
+set vpn ipsec site-to-site peer TR99-to-RT20 authentication remote-id 'RT20'
+set vpn ipsec site-to-site peer TR99-to-RT20 connection-type 'initiate'
+set vpn ipsec site-to-site peer TR99-to-RT20 ike-group 'IPsec_IKE'
+set vpn ipsec site-to-site peer TR99-to-RT20 ikev2-reauth 'inherit'
+set vpn ipsec site-to-site peer TR99-to-RT20 local-address '100.64.0.99'
+set vpn ipsec site-to-site peer TR99-to-RT20 remote-address '100.64.0.20'
+set vpn ipsec site-to-site peer TR99-to-RT20 vti bind 'vti20'
+set vpn ipsec site-to-site peer TR99-to-RT20 vti esp-group 'IPsec_ESP'
+set interfaces vti vti20 address '100.64.1.21/31'
+set interfaces vti vti20 description 'RT99-to-RT20_tunnel'
+set interfaces vti vti20 ip adjust-mss 'clamp-mss-to-pmtu'
+set protocols static route 100.64.1.20/32 interface vti20
+
+# OSPF
+set protocols ospf default-information originate
+set protocols ospf area 0.0.0.0 network '100.64.1.0/24'
+set protocols ospf area 100.64.99.0 network '100.64.99.0/24'
+set protocols ospf interface vti10 network 'point-to-point'
+set protocols ospf interface vti10 passive disable
+set protocols ospf interface vti20 network 'point-to-point'
+set protocols ospf interface vti20 passive disable
+set protocols ospf log-adjacency-changes detail
+set protocols ospf passive-interface 'default'
