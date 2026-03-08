@@ -1,7 +1,9 @@
 # ローカルドメインの解決専用
 my.home:53 {
   bind {$VIP} {$HOST_IP}            # VIPと物理IPの両方でバインド
-  hosts /etc/hosts { fallthrough }  # hosts に記載がなければ次
+  hosts /etc/hosts {
+    fallthrough                     # hosts に記載がなければ次
+  }
   forward . 192.168.0.252 {         # my.home のフォワード先
     health_check 60s                # 60秒ごとにヘルスチェック
     max_fails 3                     # 3回エラーが発生するとフォワード先から除外
@@ -20,7 +22,9 @@ my.home:53 {
 # ローカルドメイン以外の名前解決
 .:53 {
   bind {$VIP} {$HOST_IP}
-  hosts /etc/hosts { fallthrough }
+  hosts /etc/hosts {
+    fallthrough
+  }
   forward . 192.168.0.252 1.0.0.1 8.8.4.4 { # 内部 DNS 以外に Cloudflare, Goole にフォワード
     health_check 60s
     max_fails 3
